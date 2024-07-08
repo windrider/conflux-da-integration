@@ -1,0 +1,13 @@
+FROM ubuntu:latest
+
+RUN apt-get update && apt-get install -y wget
+RUN wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-keyring_1.1-1_all.deb
+RUN dpkg -i cuda-keyring_1.1-1_all.deb
+RUN apt-get update 
+RUN apt-get install -y cuda-runtime-12-4
+RUN apt-get install -y nvidia-driver-550-open
+# RUN apt-get install -y cuda-drivers-550
+
+# 复制构建好的二进制文件到新的容器中
+COPY ./server /usr/local/bin/server
+COPY ./0g-da-encoder/run/config.toml ./config.toml

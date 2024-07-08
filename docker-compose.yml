@@ -1,0 +1,78 @@
+services:
+  0g-chain:
+    image: 0g-chain
+    healthcheck:
+      test: ["CMD", "/bin/bash", "./checkhealth.sh"]
+      interval: 6s
+      timeout: 5s
+      retries: 10
+
+  0g-da-contract:
+    image: 0g-da-contract
+    depends_on:
+      0g-chain:
+        condition: service_healthy
+    command: yarn deploy zg
+
+  0g-da-node:
+    image: 0g-da-node
+    depends_on:
+      0g-da-contract:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "34000"]
+      interval: 6s 
+      timeout: 5s  
+      retries: 12   
+    command: ["sh", "-c", "sleep 5 && server --config config.toml"]
+
+  0g-da-encoder:
+    image: 0g-da-encoder
+    volumes:
+      - ./da-encoder/params:/params:ro
+    command: server --config config.toml
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+  0g-da-disperser:
+    image: 0g-da-disperser
+    depends_on: 
+      0g-da-node:
+        condition: service_healthy
+      0g-da-encoder:
+        condition: service_started
+    command: /combined
+        --chain.rpc http://0g-chain:8545/
+        --chain.private-key 17939f5b4fa643ab86df3ae9d0b8f9c8c0c14328e679ece6c243d32dab673e49
+        --chain.receipt-wait-rounds 180
+        --chain.receipt-wait-interval 1s
+        --chain.gas-limit 2000000
+        --combined-server.use-memory-db
+        --batcher.da-entrance-contract 0x64fcfde2350E08E7BaDc18771a7674FAb5E137a2
+        --batcher.da-signers-contract 0x0000000000000000000000000000000000001000
+        --combined-server.storage.kv-db-path /data
+        --combined-server.storage.time-to-expire 300
+        --disperser-server.grpc-port 51001
+        --batcher.pull-interval 30s
+        --batcher.signed-pull-interval 60s
+        --batcher.finalizer-interval 20s
+        --batcher.confirmer-num 3
+        --batcher.max-num-retries-for-sign 10
+        --batcher.finalized-block-count 50
+        --batcher.encoding-request-queue-size 1
+        --encoder-socket 0g-da-encoder:34000
+        --batcher.batch-size-limit 500
+        --encoding-timeout 60s
+        --chain-read-timeout 12s
+        --chain-write-timeout 13s
+
+  0g-da-test-client:
+    image: 0g-da-test-client
+    depends_on:
+      - 0g-da-disperser
+    command: client zgda-disperse --url http://0g-da-disperser:51001
