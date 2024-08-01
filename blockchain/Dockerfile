@@ -36,9 +36,9 @@ FROM alpine:3.15
 RUN apk add bash jq curl
 COPY --from=build-env /go/bin/0gchaind /0gchaind
 COPY --from=build-env /root/localtestnet.sh /localtestnet.sh
+COPY ./checkhealth.sh /
 
 RUN sed -i 's|BINARY=./out/$NATIVE_GO_OS/0gchaind|BINARY=/0gchaind|' localtestnet.sh
 RUN sed -i 's|\(\$BINARY start --home \$DATA\)|\1 --json-rpc.address 0.0.0.0:8545|' localtestnet.sh
-RUN echo 'curl -X POST --data '"'"'{"jsonrpc":"2.0","method":"web3_clientVersion","params":[],"id":1}'"'"' -H "Content-Type: application/json" http://localhost:8545' > checkhealth.sh
 
 CMD ["/bin/bash", "-c", "./localtestnet.sh 2>/dev/null"]

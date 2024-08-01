@@ -9,6 +9,8 @@ services:
 
   0g-da-contract:
     image: 0g-da-contract
+    volumes:
+      - ./da-contract/cache:/root/.cache
     depends_on:
       0g-chain:
         condition: service_healthy
@@ -48,7 +50,7 @@ services:
         condition: service_started
     command: /combined
         --chain.rpc http://0g-chain:8545/
-        --chain.private-key 17939f5b4fa643ab86df3ae9d0b8f9c8c0c14328e679ece6c243d32dab673e49
+        --chain.private-key 58095a53ea065b7dc3065365b2a8f6797f26464381bb6a34f8337f010a63cb63
         --chain.receipt-wait-rounds 180
         --chain.receipt-wait-interval 1s
         --chain.gas-limit 2000000

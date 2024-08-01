@@ -1,4 +1,5 @@
-out/
+0g-chain/out/
+0g-chain/client/docs
 **/node_modules/
 .git/
 .github/

@@ -24,6 +24,6 @@ signer_bls_private_key = "11"
 validator_private_key = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff8"
 # signer eth account private key
 signer_eth_private_key = "0x17939f5b4fa643ab86df3ae9d0b8f9c8c0c14328e679ece6c243d32dab673e49"
-
+miner_eth_private_key = "0x9549f115b0a21e5071a8aec1b74ac093190e18dd83d019ac6497b0adfbeff26d"
 # whether to enable data availability sampling
-enable_das = "false"
+enable_das = "true"

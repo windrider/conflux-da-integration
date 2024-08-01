@@ -12,11 +12,8 @@ else
 fi
 
 if [[ $DOCKER_DEBUG -eq 1 ]]; then
-    # 如果DOCKER_DEBUG是1，添加--progress=plain到ARGS数组
     ARGS+=(--progress=plain)
 fi
-
-echo "ARGS: ${ARGS[@]}"
 
 cd blockchain
 docker build -t 0g-chain ${ARGS[@]} .
@@ -25,7 +22,6 @@ cd ..
 cd da-contract
 docker build -t 0g-da-contract ${ARGS[@]} .
 cd ..
-
 
 cd da-node
 docker build -t 0g-da-node ${ARGS[@]} .

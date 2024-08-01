@@ -38,11 +38,3 @@ RUN apt-get update \
 COPY --from=builder /app/server-output /usr/local/bin/server
 COPY --from=builder /build/params ./params
 COPY ./config.toml ./config.toml
-RUN sed -i \
-  -e 's|eth_rpc_endpoint = "https://rpc-testnet.0g.ai"|eth_rpc_endpoint = "http://0g-chain:8545/"|' \
-  -e 's|socket_address = "<public_ip/dns>:34000"|socket_address = "0g-da-node:34000"|' \
-  -e 's|da_entrance_address = ""|da_entrance_address = "0x64fcfde2350E08E7BaDc18771a7674FAb5E137a2"|' \
-  -e 's|signer_bls_private_key = ""|signer_bls_private_key = "11"|' \
-  -e 's|signer_eth_private_key = ""|signer_eth_private_key = "0x17939f5b4fa643ab86df3ae9d0b8f9c8c0c14328e679ece6c243d32dab673e49"|' \
-  -e 's|enable_das = "false"|enable_das = "true"|' \
-  ./config.toml

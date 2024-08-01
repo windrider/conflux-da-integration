@@ -13,8 +13,9 @@ RUN --mount=type=cache,target=/builder/node_modules yarn install --frozen-lockfi
 # 复制项目文件
 COPY ./0g-da-contract .
 
-RUN sed -i "s|type(uint).max / 262144|type(uint).max / 64|" contracts/DAEntrance.sol
-RUN sed -i "s|uint64 constant SAMPLE_PERIOD = 30;|uint64 constant SAMPLE_PERIOD = 10;|" contracts/libraries/SampleVerifier.sol
+RUN du -sh *
+
+RUN sed -i '/await (await entrance_.initialize()).wait();/a\    await entrance_.setSamplePeriod(10);' src/deploy/deploy_da_entrance.ts
 
 # 构建应用
 RUN --mount=type=cache,target=/builder/node_modules yarn build
