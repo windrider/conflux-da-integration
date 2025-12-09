@@ -1,0 +1,8 @@
+# 快速补丁：只替换编译后的二进制文件
+FROM 0g-da-node:latest
+
+# 删除旧的二进制文件
+RUN rm /usr/local/bin/server
+
+# 从构建阶段复制新的二进制文件
+COPY ./0g-da-node/target/release/server /usr/local/bin/server

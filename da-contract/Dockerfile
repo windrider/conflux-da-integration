@@ -40,5 +40,6 @@ COPY --from=builder /builder/src ./src
 COPY ./0g-da-contract/package.json ./
 COPY ./0g-da-contract/hardhat.config.ts ./
 
-RUN echo 'DEPLOYER_KEY = "17939f5b4fa643ab86df3ae9d0b8f9c8c0c14328e679ece6c243d32dab673e49"' > .env
-RUN sed -i "s|http://0.0.0.0:8545|http://0g-chain:8545|" hardhat.config.ts
+RUN echo 'DEPLOYER_KEY = "46b9e861b63d3509c88b7817275a30d22d62c8cd8fa6486ddee35ef0d8e0495f"' > .env
+# Use 127.0.0.1 to connect to Conflux running on host machine
+RUN sed -i "s|http://0.0.0.0:8545|http://127.0.0.1:8545|" hardhat.config.ts

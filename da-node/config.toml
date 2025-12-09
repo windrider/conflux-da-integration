@@ -6,16 +6,16 @@ data_path = "./db/"
 encoder_params_dir = "params/" 
 
 # grpc server listen address
-grpc_listen_address = "0.0.0.0:34000"
+grpc_listen_address = "0.0.0.0:34001"
 # chain eth rpc endpoint
-eth_rpc_endpoint = "http://0g-chain:8545/"
+eth_rpc_endpoint = "http://localhost:8545/"
 # public grpc service socket address to register in DA contract
-# ip:34000 (keep same port as the grpc listen address)
+# ip:34001 (keep same port as the grpc listen address)
 # or if you have dns, fill your dns
-socket_address = "0g-da-node:34000"
+socket_address = "0g-da-node:34001"
 
 # data availability contract to interact with
-da_entrance_address = "0x64fcfde2350E08E7BaDc18771a7674FAb5E137a2"
+da_entrance_address = "0x9Ec76BC9364bbA2A06c5Db290A315b4ffd29d934"
 # deployed block number of da entrance contract
 start_block_number = 0
 

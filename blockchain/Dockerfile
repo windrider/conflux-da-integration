@@ -1,44 +1,72 @@
-FROM golang:1.21-alpine AS build-env
+FROM rust:1.75-slim AS builder
 
-# Set up dependencies
-# bash, jq, curl for debugging
-# git, make for installation
-# libc-dev, gcc, linux-headers, eudev-dev are used for cgo and ledger installation
-RUN apk add bash git make libc-dev gcc linux-headers eudev-dev jq curl
+ENV CMAKE_POLICY_VERSION_MINIMUM="3.5"
+ENV CFLAGS="-Wno-error=array-bounds -Wno-array-bounds"
+ENV CXXFLAGS="-Wno-error=array-bounds -Wno-array-bounds"
 
-# Set working directory for the build
-WORKDIR /root
-# default home directory is /root
+# Install build dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    cmake \
+    clang \
+    libclang-dev \
+    libssl-dev \
+    pkg-config \
+    git \
+    && rm -rf /var/lib/apt/lists/*
 
-# Copy dependency files first to facilitate dependency caching
-COPY ./0g-chain/go.mod ./
-COPY ./0g-chain/go.sum ./
+# Set working directory
+WORKDIR /build
 
-# Download dependencies
-RUN --mount=type=cache,target=/root/.cache/go-build \
-    --mount=type=cache,target=/go/pkg/mod \
-    go version && go mod download
+# Configure Cargo to use git CLI for better network compatibility
+RUN mkdir -p /root/.cargo && \
+    echo '[net]' > /root/.cargo/config.toml && \
+    echo 'git-fetch-with-cli = true' >> /root/.cargo/config.toml && \
+    echo '' >> /root/.cargo/config.toml && \
+    echo '[source.crates-io]' >> /root/.cargo/config.toml && \
+    echo 'replace-with = "ustc"' >> /root/.cargo/config.toml && \
+    echo '' >> /root/.cargo/config.toml && \
+    echo '[source.ustc]' >> /root/.cargo/config.toml && \
+    echo 'registry = "https://mirrors.ustc.edu.cn/crates.io-index"' >> /root/.cargo/config.toml
 
-# Add source files
-COPY ./0g-chain .
+# Copy Conflux source code
+COPY ./conflux-rust .
 
-RUN sed -i 's|EpochBlocks:       5760|EpochBlocks:       10|' x/dasigners/v1/types/genesis.go
+# Build Conflux in release mode
+RUN cargo build --release --bin conflux
 
-#ENV LEDGER_ENABLED False
+# Build pos-genesis-tool for validator setup
+RUN cargo build --release --bin pos-genesis-tool
 
-# Mount go build and mod caches as container caches, persisted between builder invocations
-RUN --mount=type=cache,target=/root/.cache/go-build \
-    --mount=type=cache,target=/go/pkg/mod \
-    make install
+# Final stage
+FROM ubuntu:22.04
 
-FROM alpine:3.15
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y \
+    libssl3 \
+    ca-certificates \
+    curl \
+    jq \
+    && rm -rf /var/lib/apt/lists/*
 
-RUN apk add bash jq curl
-COPY --from=build-env /go/bin/0gchaind /0gchaind
-COPY --from=build-env /root/localtestnet.sh /localtestnet.sh
-COPY ./checkhealth.sh /
+# Copy binaries from builder
+COPY --from=builder /build/target/release/conflux /usr/local/bin/conflux
+COPY --from=builder /build/target/release/pos-genesis-tool /usr/local/bin/pos-genesis-tool
 
-RUN sed -i 's|BINARY=./out/$NATIVE_GO_OS/0gchaind|BINARY=/0gchaind|' localtestnet.sh
-RUN sed -i 's|\(\$BINARY start --home \$DATA\)|\1 --json-rpc.address 0.0.0.0:8545|' localtestnet.sh
+# Create directories
+RUN mkdir -p /data /config
 
-CMD ["/bin/bash", "-c", "./localtestnet.sh 2>/dev/null"]
+# Copy configuration and startup script
+COPY ./start.sh /start.sh
+RUN chmod +x /start.sh
+
+# Expose ports
+# 8545: eSpace HTTP RPC
+# 8546: eSpace WebSocket
+# 12537: Core Space HTTP RPC
+# 12535: P2P
+EXPOSE 8545 8546 12537 12535
+
+WORKDIR /data
+
+CMD ["/start.sh"]

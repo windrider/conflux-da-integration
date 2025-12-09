@@ -1,0 +1,20 @@
+FROM ubuntu:22.04
+
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y \
+    ca-certificates \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy the compiled binary from host
+COPY ./conflux-rust/target/release/conflux /usr/local/bin/conflux
+COPY ./start.sh /start.sh
+
+RUN chmod +x /usr/local/bin/conflux /start.sh
+
+# Create data directory
+RUN mkdir -p /data
+
+EXPOSE 8545 8546 12537 12535 32323 32525
+
+CMD ["/start.sh"]

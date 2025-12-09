@@ -1,26 +1,47 @@
 services:
-  0g-chain:
-    image: 0g-chain
-    healthcheck:
-      test: ["CMD", "/bin/bash", "./checkhealth.sh"]
-      interval: 6s
-      timeout: 5s
-      retries: 10
+  # conflux-chain service is now running on host machine
+  # Use run-conflux-local.sh to start Conflux on localhost
+  # conflux-chain:
+  #   image: conflux-chain
+  #   build:
+  #     context: ./blockchain
+  #     dockerfile: Dockerfile
+  #   ports:
+  #     - "8545:8545"  # eSpace RPC
+  #     - "8546:8546"  # eSpace WebSocket
+  #   healthcheck:
+  #     test: ["CMD", "sh", "-c", "curl -X POST -H 'Content-Type: application/json' -d '{\"jsonrpc\":\"2.0\",\"method\":\"eth_blockNumber\",\"params\":[],\"id\":1}' http://localhost:8545 | grep result"]
+  #     interval: 6s
+  #     timeout: 5s
+  #     retries: 10
+  #   volumes:
+  #     - conflux-data:/data
 
   0g-da-contract:
     image: 0g-da-contract
+    build:
+      context: ./da-contract
+      dockerfile: Dockerfile
     volumes:
       - ./da-contract/cache:/root/.cache
-    depends_on:
-      0g-chain:
-        condition: service_healthy
-    command: yarn deploy zg
+    network_mode: host  # Use host network to connect to localhost Conflux
+    # Wait for Conflux on localhost to be ready
+    # Wait 120 seconds for gas limit to increase from 30M to 36M+ before deploying
+    # Contract deployment needs ~8.8M gas, but tx pool limits to 25% of block gas
+    # So we need block gas limit > 35.4M (8.8M / 0.25)
+    # Gas limit grows ~49k/sec, so 150s should reach 36M
+    command: sh -c "yarn deploy zg"
+
+
 
   0g-da-node:
     image: 0g-da-node
     depends_on:
       0g-da-contract:
         condition: service_completed_successfully
+    volumes:
+      - ./da-node/config.toml:/config.toml:ro
+    network_mode: host  # Use host network to connect to localhost Conflux
     healthcheck:
       test: ["CMD", "nc", "-z", "localhost", "34000"]
       interval: 6s 
@@ -33,6 +54,7 @@ services:
     volumes:
       - ./da-encoder/params:/params:ro
     command: server --config config.toml
+    network_mode: host  # Use host network so disperser can connect via localhost
     deploy:
       resources:
         reservations:
@@ -49,14 +71,14 @@ services:
       0g-da-encoder:
         condition: service_started
     command: /combined
-        --chain.rpc http://0g-chain:8545/
+        --chain.rpc http://localhost:8545/
         --chain.private-key 58095a53ea065b7dc3065365b2a8f6797f26464381bb6a34f8337f010a63cb63
         --chain.receipt-wait-rounds 180
         --chain.receipt-wait-interval 1s
         --chain.gas-limit 2000000
         --combined-server.use-memory-db
-        --batcher.da-entrance-contract 0x64fcfde2350E08E7BaDc18771a7674FAb5E137a2
-        --batcher.da-signers-contract 0x0000000000000000000000000000000000001000
+        --batcher.da-entrance-contract 0x9Ec76BC9364bbA2A06c5Db290A315b4ffd29d934
+        --batcher.da-signers-contract 0x0888000000000000000000000000000000000003
         --combined-server.storage.kv-db-path /data
         --combined-server.storage.time-to-expire 300
         --disperser-server.grpc-port 51001
@@ -67,14 +89,19 @@ services:
         --batcher.max-num-retries-for-sign 10
         --batcher.finalized-block-count 50
         --batcher.encoding-request-queue-size 1
-        --encoder-socket 0g-da-encoder:34000
+        --encoder-socket localhost:34000
         --batcher.batch-size-limit 500
-        --encoding-timeout 60s
+        --encoding-timeout 300s
         --chain-read-timeout 12s
         --chain-write-timeout 13s
+    network_mode: host  # Use host network to connect to localhost Conflux
 
   0g-da-test-client:
     image: 0g-da-test-client
     depends_on:
       - 0g-da-disperser
-    command: client zgda-disperse --url http://0g-da-disperser:51001
+    command: client zgda-disperse --url http://localhost:51001
+    network_mode: host  # Use host network to connect to disperser
+
+volumes:
+  conflux-data:
