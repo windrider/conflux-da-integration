@@ -22,6 +22,8 @@ services:
     build:
       context: ./da-contract
       dockerfile: Dockerfile
+    environment:
+      - DEPLOYER_KEY=02c3357d2ae0a59e18f62ab69093cc22eac1a25c9f78af7f78650939ecda5f62
     volumes:
       - ./da-contract/cache:/root/.cache
     network_mode: host  # Use host network to connect to localhost Conflux
@@ -35,7 +37,7 @@ services:
 
 
   0g-da-node:
-    image: 0g-da-node
+    image: conflux-da-integration-0g-da-node:patched
     depends_on:
       0g-da-contract:
         condition: service_completed_successfully
@@ -77,7 +79,7 @@ services:
         --chain.receipt-wait-interval 1s
         --chain.gas-limit 2000000
         --combined-server.use-memory-db
-        --batcher.da-entrance-contract 0x9Ec76BC9364bbA2A06c5Db290A315b4ffd29d934
+        --batcher.da-entrance-contract 0x6Fefa456504C11B38444Cd66F9D3291270D58CB2
         --batcher.da-signers-contract 0x0888000000000000000000000000000000000003
         --combined-server.storage.kv-db-path /data
         --combined-server.storage.time-to-expire 300

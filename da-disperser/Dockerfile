@@ -17,6 +17,7 @@ COPY ./0g-da-client/api/go.mod ./api
 # Download dependencies
 RUN --mount=type=cache,target=/root/.cache/go-build \
     --mount=type=cache,target=/go/pkg/mod \
+    go env -w GOPROXY=https://goproxy.cn,direct && \
     go version && go mod download
 
 COPY ./0g-da-client .
