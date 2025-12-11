@@ -40,6 +40,7 @@ print(f'Genesis account balance: {w3.from_wei(genesis_balance, "ether")} CFX')
 # Accounts to fund
 accounts_to_fund = [
     ('0x9685c4eb29309820cdc62663cc6cc82f3d42e964', 'DA node signer'),
+    ('0x7Bbf300890857b8c241b219C6a489431669b3aFA', 'DA node miner'),
     ('0xa223d305bc8147a75761f7f72f983e5eef867bd4', 'DA contract deployer (old)'),
     ('0x5C33D16d3197AEDE38cD2FBc4E7Ff75edA97D81E', 'DA contract deployer'),
     ('0xbDA94faf1CBb37Fc3ff66adcc70FF0e3036D19cD', 'Disperser')
