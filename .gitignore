@@ -1,4 +1,5 @@
 /da-encoder/params
 /da-encoder/server
 /da-contract/cache/*
-error.log
+*/blockchain_data
+*.log
