@@ -3,3 +3,4 @@
 /da-contract/cache/*
 */blockchain_data/
 *.log
+blockchain/run/blockchain_data/*
