@@ -1,0 +1,33 @@
+log_level = "info"
+
+data_path = "./db2/"
+
+# path to downloaded params folder
+encoder_params_dir = "params/" 
+
+# grpc server listen address
+grpc_listen_address = "0.0.0.0:34002"
+# chain eth rpc endpoint
+eth_rpc_endpoint = "http://localhost:8545/"
+# public grpc service socket address to register in DA contract
+# ip:34002 (keep same port as the grpc listen address)
+# or if you have dns, fill your dns
+# Use Docker gateway IP to allow containers to access host services
+# 172.20.0.1 is the Docker network gateway (host machine)
+socket_address = "localhost:34002"
+
+# data availability contract to interact with
+da_entrance_address = "0x6Fefa456504C11B38444Cd66F9D3291270D58CB2"
+# deployed block number of da entrance contract
+start_block_number = 0
+
+# signer BLS private key
+signer_bls_private_key = "22"
+# Hardhat Account #3
+validator_private_key = "0x7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6"
+# Hardhat Account #4
+signer_eth_private_key = "0x47e179ec197488593b187f80a00eb0da91f1b9d0b13f8733639f19c30a34926a"
+# Hardhat Account #5
+miner_eth_private_key = "0x8b3a350cf5c34c9194ca85829a2df0ec3153be0318b5e2d3348e872092edffba"
+# whether to enable data availability sampling
+enable_das = "true"

@@ -24,11 +24,19 @@ genesis_balance = w3.eth.get_balance(account.address)
 print(f"Genesis balance: {w3.from_wei(genesis_balance, 'ether')} CFX")
 
 accounts_to_fund = [
-    ("0x9685c4eb29309820cdc62663cc6cc82f3d42e964", "DA node signer"),
-    ("0x7Bbf300890857b8c241b219C6a489431669b3aFA", "DA node miner"),
+    ("0x9685c4eb29309820cdc62663cc6cc82f3d42e964", "DA node 1 signer"),
+    ("0x7Bbf300890857b8c241b219C6a489431669b3aFA", "DA node 1 miner"),
     ("0xa223d305bc8147a75761f7f72f983e5eef867bd4", "DA contract deployer (old)"),
     ("0x5C33D16d3197AEDE38cD2FBc4E7Ff75edA97D81E", "DA contract deployer"),
-    ("0xbDA94faf1CBb37Fc3ff66adcc70FF0e3036D19cD", "Disperser")
+    ("0xbDA94faf1CBb37Fc3ff66adcc70FF0e3036D19cD", "Disperser"),
+    # DA node 2 accounts (Hardhat #3, #4, #5)
+    ("0x90F79bf6EB2c4f870365E785982E1f101E93b906", "DA node 2 validator"),
+    ("0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65", "DA node 2 signer"),
+    ("0x9965507D1a55bcC2695C58ba16FB37d819B0A4dc", "DA node 2 miner"),
+    # DA node 3 accounts (Hardhat #6, #7, #8)
+    ("0x976EA74026E726554dB657fA54763abd0C3a0aa9", "DA node 3 validator"),
+    ("0x14dC79964da2C08b23698B3D3cc7Ca32193d9955", "DA node 3 signer"),
+    ("0x23618e81E3f5cdF7f54C3d65f7FBc0aBf5B21E8f", "DA node 3 miner")
 ]
 
 amount = w3.to_wei(100, "ether")

@@ -1,5 +1,5 @@
 /da-encoder/params
 /da-encoder/server
 /da-contract/cache/*
-*/blockchain_data
+*/blockchain_data/
 *.log

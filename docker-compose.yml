@@ -57,7 +57,37 @@ services:
       - ./da-node/config.toml:/config.toml:ro
     network_mode: "service:conflux-chain"
     healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "34000"]
+      test: ["CMD", "nc", "-z", "localhost", "34001"]
+      interval: 6s 
+      timeout: 5s  
+      retries: 12   
+    command: ["sh", "-c", "sleep 5 && server --config config.toml"]
+
+  0g-da-node-2:
+    image: conflux-da-integration-0g-da-node:patched
+    depends_on:
+      0g-da-contract:
+        condition: service_completed_successfully
+    volumes:
+      - ./da-node/config2.toml:/config.toml:ro
+    network_mode: "service:conflux-chain"
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "34002"]
+      interval: 6s 
+      timeout: 5s  
+      retries: 12   
+    command: ["sh", "-c", "sleep 5 && server --config config.toml"]
+
+  0g-da-node-3:
+    image: conflux-da-integration-0g-da-node:patched
+    depends_on:
+      0g-da-contract:
+        condition: service_completed_successfully
+    volumes:
+      - ./da-node/config3.toml:/config.toml:ro
+    network_mode: "service:conflux-chain"
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "34003"]
       interval: 6s 
       timeout: 5s  
       retries: 12   
@@ -81,6 +111,10 @@ services:
     image: 0g-da-disperser
     depends_on: 
       0g-da-node:
+        condition: service_healthy
+      0g-da-node-2:
+        condition: service_healthy
+      0g-da-node-3:
         condition: service_healthy
       0g-da-encoder:
         condition: service_started

@@ -12,9 +12,8 @@ eth_rpc_endpoint = "http://localhost:8545/"
 # public grpc service socket address to register in DA contract
 # ip:34001 (keep same port as the grpc listen address)
 # or if you have dns, fill your dns
-# Use Docker gateway IP to allow containers to access host services
-# 172.20.0.1 is the Docker network gateway (host machine)
-socket_address = "172.20.0.1:34001"
+# In shared network mode, use localhost for container-to-container communication
+socket_address = "localhost:34001"
 
 # data availability contract to interact with
 da_entrance_address = "0x6Fefa456504C11B38444Cd66F9D3291270D58CB2"
