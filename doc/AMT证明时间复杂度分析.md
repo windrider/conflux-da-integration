@@ -76,35 +76,20 @@ $$f(x) = \Sigma_i d_i \cdot L_i(x)$$
 
 #### 2.1.1 原理
 
-对于二叉树结构中深度为 d、位置索引为 t 的任意节点，定义其对应的子多项式为 fᵈ,ₜ(x)，该多项式具有如下特性：
+对于二叉树结构中深度为 d、位置索引为 t 的任意节点，定义其对应的子多项式为 $f_{d,t}(x)$，该多项式具有如下特性：
 
-1. 在该节点对应的求值点集合 Tᵈ,ₜ 上，fᵈ,ₜ(x) 与原多项式 f(x) 的取值保持一致；
-2. 在集合 Tᵈ,ₜ 的补集上，fᵈ,ₜ(x) 的取值恒为 0。
+1. 在该节点对应的求值点集合 $T_{d,t}$ 上，$f_{d,t}(x)$ 与原多项式 f(x) 的取值保持一致；
+2. 在集合 $T_{d,t}$ 的补集上，$f_{d,t}(x)$ 的取值恒为 0。
 
-为证明 fᵈ,ₜ(x) 的有效性，需要构造其商多项式 hᵈ,ₜ(x)，定义为：
+为证明 $f_{d,t}(x)$ 的有效性，需要构造其商多项式 $h_{d,t}(x)$，定义为：
 
-$$h^{d,t}(x) = \frac{f^{d,t}(x)}{Z^{d,t}(x)}$$
+$$h_{d,t}(x) = \frac{f_{d,t}(x)}{Z_{d,t}(x)}$$
 
-其中，Zᵈ,ₜ(x) 为消失多项式（Vanishing Polynomial），定义为：
+其中，$Z_{d,t}(x)$ 为消失多项式（Vanishing Polynomial），定义为：
 
 $$Z_{d,t}(x) = \prod_{i \in T^c_{d,t}} (x - \omega_i)$$
 
-其中 Tᵈ,ₜᶜ 表示集合 Tᵈ,ₜ 的补集，ωᵢ 为补集中的单位根元素。
-
-#### 2.1.2 计算复杂度分析
-
-商多项式证明树的时间复杂度为 **O(n² log n)**，具体推导如下：
-
-**树结构参数**：
-- 树的深度：D = log₂ n；
-- 第 d 层的节点数量：Nᵈ = 2ᵈ；
-- 第 d 层每个节点包含的数据元素数：Eᵈ = n² / 2ᵈ。
-
-**商多项式承诺的 MSM 计算原理**：
-
-根据商多项式的定义 $h_{d,t}(x) = f_{d,t}(x) / Z_{d,t}(x)$，其 KZG 承诺可表示为：
-
-$$h_{d,t}(\tau) \cdot G = \frac{f_{d,t}(\tau)}{Z_{d,t}(\tau)} \cdot G$$
+其中 $T^c_{d,t}$ 表示集合 $T_{d,t}$ 的补集，$\omega_i$ 为补集中的单位根元素。
 
 利用拉格朗日基多项式展开，子多项式 $f_{d,t}(x)$ 可表示为：
 
@@ -118,7 +103,14 @@ h_{d,t}(\tau) \cdot G &= \frac{\Sigma_i d_i \cdot L_i(\tau)}{Z_{d,t}(\tau)} \cdo
 &= \Sigma_i d_i \cdot Q_{i,d,t}
 \end{aligned}$$
 
-其中，$Q_{i,d,t} = [L_i(\tau) / Z_{d,t}(\tau)] \cdot G$ 定义为**商多项式基底**（Quotient Basis）。
+其中， $Q_{i,d,t} = [L_i(\tau) / Z_{d,t}(\tau)] \cdot G$ 定义为**商多项式基底**（Quotient Basis）。
+
+#### 2.1.2 计算复杂度分析
+
+**树结构参数**：
+- 树的深度：D = log₂ n；
+- 第 d 层的节点数量：Nᵈ = 2ᵈ；
+- 第 d 层每个节点包含的数据元素数：Eᵈ = n² / 2ᵈ。
 
 **预计算优化**：
 
@@ -150,7 +142,7 @@ AMT 二叉树结构中的每个节点均具有对应的 KZG 承诺。对于深�
 
 $$C_{d,t} = f_{d,t}(\tau) \cdot G$$
 
-利用拉格朗日基多项式进行展开，$f_{d,t}(x)$ 可表示为：
+利用拉格朗日基多项式进行展开， $f_{d,t}(x)$ 可表示为：
 
 $$f_{d,t}(x) = \Sigma_i d_i \cdot L_i(x)$$
 
@@ -239,7 +231,7 @@ $$H = \tau^{3n^2} \cdot P(\tau) \cdot G$$
 2. 对该子集执行 IFFT 变换，获得高度拉格朗日基底：
 
 $$\begin{aligned}
-\{H\_B_i\} &= \text{IFFT}(\{[\tau^{3n^2} G, \tau^{3n^2+1} G, \ldots, \tau^{4n^2-1} G]\}) \\
+\{H\_Bi\} &= \text{IFFT}(\{[\tau^{3n^2} G, \tau^{3n^2+1} G, \ldots, \tau^{4n^2-1} G]\}) \\
 &= \tau^{3n^2} \cdot \text{IFFT}(\{[G, \tau G, \ldots, \tau^{n^2-1} G]\}) \\
 &= \tau^{3n^2} \cdot \{[L_0(\tau) G, L_1(\tau) G, \ldots, L_{n^{2}-1}(\tau) G]\}
 \end{aligned}$$
@@ -247,8 +239,8 @@ $$\begin{aligned}
 利用高度基底，低度测试承诺可通过单次 MSM 操作计算：
 
 $$\begin{aligned}
-H &= \text{MSM}(\{H\_B_i\}, \{d_i\}) \\
-&= \Sigma_i d_i \cdot H\_B_i \\
+H &= \text{MSM}(\{H\_Bi\}, \{d_i\}) \\
+&= \Sigma_i d_i \cdot H\_Bi \\
 &= \tau^{3n^2} \cdot \Sigma_i d_i \cdot L_i(\tau) \cdot G \\
 &= \tau^{3n^2} \cdot P(\tau) \cdot G
 \end{aligned}$$
@@ -298,7 +290,7 @@ $$\tau^{3n^2 + \deg(P')} \cdot G, \quad \text{其中} \quad 3n^2 + \deg(P') \geq
 
 低度测试承诺的计算通过单次 MSM 操作完成：
 
-$$H = \text{MSM}(\{H\_B_i\}, \{d_i\})$$
+$$H = \text{MSM}(\{H\_Bi\}, \{d_i\})$$
 
 其中 {H_Bᵢ} 为预计算的高度基底（包含 n² 个元素），{dᵢ} 为数据向量（包含 n² 个元素）。MSM 操作的时间复杂度为：
 
@@ -310,5 +302,6 @@ $$T_{\text{低度测试}}(n) = O(n^2)$$
 | 商多项式证明树（Quotient Polynomial Proof Tree） | $O(n^2 \log n)$ |
 | KZG 承诺树（KZG Commitment Tree） | $O(n^2)$ |
 | 低度测试承诺（Low-Degree Test Commitment） | $O(n^2)$ |
-总体时间复杂度为$O(n^2 \log n)$
+
+总体时间复杂度为 $O(n^2 \log n)$
 
