@@ -64,7 +64,7 @@ $$f(x) = \Sigma_i d_i \cdot L_i(x)$$
 
 该层次化结构使得证明生成具有对数级复杂度优势，每层节点数减半，树的深度为 log₂(n²)。
 
-## 2. AMT 证明组成部分
+## 2. AMT 证明时间复杂度分析
 
 为单个陪集生成完整的 AMT 证明包含以下三个核心组成部分：
 
@@ -223,8 +223,6 @@ T_{\text{总}}(n) &= T_{\text{叶子}}(n) + T_{\text{聚合}}(n) \\
 &= O(n^2)
 \end{aligned}$$
 
-该结果表明，KZG 承诺树的构建复杂度由叶子层承诺计算主导，具有平方级时间复杂度。相比于传统的单个多项式承诺方案，层次化结构允许高效的递增验证和部分数据检索。
-
 ### 2.3 低度测试承诺（Low-Degree Test Commitment）
 
 #### 2.3.1 技术原理
@@ -243,7 +241,7 @@ $$H = \tau^{3n^2} \cdot P(\tau) \cdot G$$
 $$\begin{aligned}
 \{H\_B_i\} &= \text{IFFT}(\{[\tau^{3n^2} G, \tau^{3n^2+1} G, \ldots, \tau^{4n^2-1} G]\}) \\
 &= \tau^{3n^2} \cdot \text{IFFT}(\{[G, \tau G, \ldots, \tau^{n^2-1} G]\}) \\
-&= \tau^{3n^2} \cdot \{[L_0(\tau) G, L_1(\tau) G, \ldots, L_{n^2-1}(\tau) G]\}
+&= \tau^{3n^2} \cdot \{[L_0(\tau) G, L_1(\tau) G, \ldots, L_{n^{2}-1}(\tau) G]\}
 \end{aligned}$$
 
 利用高度基底，低度测试承诺可通过单次 MSM 操作计算：
@@ -306,5 +304,11 @@ $$H = \text{MSM}(\{H\_B_i\}, \{d_i\})$$
 
 $$T_{\text{低度测试}}(n) = O(n^2)$$
 
-该复杂度与 KZG 承诺树的叶子层计算复杂度相同，不成为系统性能的瓶颈。
+### 总结
+| 组成部分 | 时间复杂度 |
+|---------|-----------|
+| 商多项式证明树（Quotient Polynomial Proof Tree） | $O(n^2 \log n)$ |
+| KZG 承诺树（KZG Commitment Tree） | $O(n^2)$ |
+| 低度测试承诺（Low-Degree Test Commitment） | $O(n^2)$ |
+总体时间复杂度为$O(n^2 \log n)$
 
