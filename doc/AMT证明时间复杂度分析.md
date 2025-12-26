@@ -231,7 +231,7 @@ $$H = \tau^{3n^2} \cdot P(\tau) \cdot G$$
 2. 对该子集执行 IFFT 变换，获得高度拉格朗日基底：
 
 $$\begin{aligned}
-\{H\_Bi\} &= \text{IFFT}(\{[\tau^{3n^2} G, \tau^{3n^2+1} G, \ldots, \tau^{4n^2-1} G]\}) \\
+\{H\_{Bi}\} &= \text{IFFT}(\{[\tau^{3n^2} G, \tau^{3n^2+1} G, \ldots, \tau^{4n^2-1} G]\}) \\
 &= \tau^{3n^2} \cdot \text{IFFT}(\{[G, \tau G, \ldots, \tau^{n^2-1} G]\}) \\
 &= \tau^{3n^2} \cdot \{[L_0(\tau) G, L_1(\tau) G, \ldots, L_{n^{2}-1}(\tau) G]\}
 \end{aligned}$$
@@ -239,8 +239,8 @@ $$\begin{aligned}
 利用高度基底，低度测试承诺可通过单次 MSM 操作计算：
 
 $$\begin{aligned}
-H &= \text{MSM}(\{H\_Bi\}, \{d_i\}) \\
-&= \Sigma_i d_i \cdot H\_Bi \\
+H &= \text{MSM}(\{H\_{Bi}\}, \{d_i\}) \\
+&= \Sigma_i d_i \cdot H\_{Bi} \\
 &= \tau^{3n^2} \cdot \Sigma_i d_i \cdot L_i(\tau) \cdot G \\
 &= \tau^{3n^2} \cdot P(\tau) \cdot G
 \end{aligned}$$
@@ -290,7 +290,7 @@ $$\tau^{3n^2 + \deg(P')} \cdot G, \quad \text{其中} \quad 3n^2 + \deg(P') \geq
 
 低度测试承诺的计算通过单次 MSM 操作完成：
 
-$$H = \text{MSM}(\{H\_Bi\}, \{d_i\})$$
+$$H = \text{MSM}(\{H\_{Bi}\}, \{d_i\})$$
 
 其中 {H_Bᵢ} 为预计算的高度基底（包含 n² 个元素），{dᵢ} 为数据向量（包含 n² 个元素）。MSM 操作的时间复杂度为：
 
