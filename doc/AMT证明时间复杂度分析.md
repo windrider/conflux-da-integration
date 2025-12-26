@@ -87,7 +87,7 @@ $$h^{d,t}(x) = \frac{f^{d,t}(x)}{Z^{d,t}(x)}$$
 
 其中，Zᵈ,ₜ(x) 为消失多项式（Vanishing Polynomial），定义为：
 
-$$Z^{d,t}(x) = \prod_{i \in T^{d,t}_c} (x - \omega_i)$$
+$$Z_{d,t}(x) = \prod_{i \in T^c_{d,t}} (x - \omega_i)$$
 
 其中 Tᵈ,ₜᶜ 表示集合 Tᵈ,ₜ 的补集，ωᵢ 为补集中的单位根元素。
 
@@ -102,35 +102,35 @@ $$Z^{d,t}(x) = \prod_{i \in T^{d,t}_c} (x - \omega_i)$$
 
 **商多项式承诺的 MSM 计算原理**：
 
-根据商多项式的定义 hᵈ,ₜ(x) = fᵈ,ₜ(x) / Zᵈ,ₜ(x)，其 KZG 承诺可表示为：
+根据商多项式的定义 $h_{d,t}(x) = f_{d,t}(x) / Z_{d,t}(x)$，其 KZG 承诺可表示为：
 
-$$h^{d,t}(\tau) \cdot G = \frac{f^{d,t}(\tau)}{Z^{d,t}(\tau)} \cdot G$$
+$$h_{d,t}(\tau) \cdot G = \frac{f_{d,t}(\tau)}{Z_{d,t}(\tau)} \cdot G$$
 
-利用拉格朗日基多项式展开，子多项式 fᵈ,ₜ(x) 可表示为：
+利用拉格朗日基多项式展开，子多项式 $f_{d,t}(x)$ 可表示为：
 
-$$f^{d,t}(x) = \Sigma_i d_i \cdot L_i(x)$$
+$$f_{d,t}(x) = \Sigma_i d_i \cdot L_i(x)$$
 
 其中 dᵢ 为数据元素，Lᵢ(x) 为拉格朗日基多项式。因此，商多项式的 KZG 承诺可改写为：
 
 $$\begin{aligned}
-h^{d,t}(\tau) \cdot G &= \frac{\Sigma_i d_i \cdot L_i(\tau)}{Z^{d,t}(\tau)} \cdot G \\
-&= \Sigma_i d_i \cdot \frac{L_i(\tau)}{Z^{d,t}(\tau)} \cdot G \\
-&= \Sigma_i d_i \cdot Q_i^{d,t}
+h_{d,t}(\tau) \cdot G &= \frac{\Sigma_i d_i \cdot L_i(\tau)}{Z_{d,t}(\tau)} \cdot G \\
+&= \Sigma_i d_i \cdot \frac{L_i(\tau)}{Z_{d,t}(\tau)} \cdot G \\
+&= \Sigma_i d_i \cdot Q_{i,d,t}
 \end{aligned}$$
 
-其中，Qᵢᵈ,ₜ = [Lᵢ(τ) / Zᵈ,ₜ(τ)] · G 定义为**商多项式基底**（Quotient Basis）。
+其中，$Q_{i,d,t} = [L_i(\tau) / Z_{d,t}(\tau)] \cdot G$ 定义为**商多项式基底**（Quotient Basis）。
 
 **预计算优化**：
 
-关键观察：商多项式基底 {Qᵢᵈ,ₜ} 仅依赖于树结构和可信设置参数，与具体数据无关。因此可在系统初始化阶段进行预计算并存储。对于给定的数据向量 d = [d₀, d₁, ..., d_{E-1}]，商多项式承诺的计算简化为单次 MSM 操作：
+关键观察：商多项式基底 $\{Q_{i,d,t}\}$ 仅依赖于树结构和可信设置参数，与具体数据无关。因此可在系统初始化阶段进行预计算并存储。对于给定的数据向量 d = [d₀, d₁, ..., d_{E-1}]，商多项式承诺的计算简化为单次 MSM 操作：
 
-$$h^{d,t}(\tau) \cdot G = \text{MSM}(\{Q_i^{d,t}\}, \{d_i\})$$
+$$h_{d,t}(\tau) \cdot G = \text{MSM}(\{Q_{i,d,t}\}, \{d_i\})$$
 
 该方法避免了运行时的多项式除法运算，将时间复杂度从 O(n² log n)（多项式除法）降低至 O(n²)（MSM 操作），显著提升了计算效率。
 
 **全树计算**：
 
-对于第 d 层的任意节点，需要计算其商多项式的 KZG 承诺 hᵈ,ₜ(τ)·G。该计算通过多标量乘法（Multi-Scalar Multiplication, MSM）实现，其时间复杂度为 O(Eᵈ) = O(n² / 2ᵈ)。
+对于第 d 层的任意节点，需要计算其商多项式的 KZG 承诺 $h_{d,t}(\tau) \cdot G$。该计算通过多标量乘法（Multi-Scalar Multiplication, MSM）实现，其时间复杂度为 O(Eᵈ) = O(n² / 2ᵈ)。
 
 计算第 d 层的时间复杂度为2ᵈ * (Eᵈ) = O(n²)
 
@@ -146,34 +146,34 @@ T(n) &= \log_2 n \times O(n^2) \\
 
 #### 2.2.1 原理
 
-AMT 二叉树结构中的每个节点均具有对应的 KZG 承诺。对于深度为 d、位置索引为 t 的任意节点，其对应的数据集合为 Tᵈ,ₜ，对应的子多项式为 fᵈ,ₜ(x)，KZG 承诺定义为：
+AMT 二叉树结构中的每个节点均具有对应的 KZG 承诺。对于深度为 d、位置索引为 t 的任意节点，其对应的数据集合为 $T_{d,t}$，对应的子多项式为 $f_{d,t}(x)$，KZG 承诺定义为：
 
-$$C^{d,t} = f^{d,t}(\tau) \cdot G$$
+$$C_{d,t} = f_{d,t}(\tau) \cdot G$$
 
-利用拉格朗日基多项式进行展开，fᵈ,ₜ(x) 可表示为：
+利用拉格朗日基多项式进行展开，$f_{d,t}(x)$ 可表示为：
 
-$$f^{d,t}(x) = \Sigma_i d_i \cdot L_i(x)$$
+$$f_{d,t}(x) = \Sigma_i d_i \cdot L_i(x)$$
 
-其中 dᵢ 为数据集合 Tᵈ,ₜ 中的元素，Lᵢ(x) 为对应于原始数据中索引位置的拉格朗日基多项式。因此，该节点的 KZG 承诺可改写为：
+其中 dᵢ 为数据集合 $T_{d,t}$ 中的元素，Lᵢ(x) 为对应于原始数据中索引位置的拉格朗日基多项式。因此，该节点的 KZG 承诺可改写为：
 
 $$\begin{aligned}
-C^{d,t} &= f^{d,t}(\tau) \cdot G \\
+C_{d,t} &= f_{d,t}(\tau) \cdot G \\
 &= [\Sigma_i d_i \cdot L_i(\tau)] \cdot G \\
 &= \Sigma_i d_i \cdot [L_i(\tau) \cdot G] \\
 &= \Sigma_i d_i \cdot B_i
 \end{aligned}$$
 
-其中 Bᵢ = Lᵢ(τ) · G 定义为**拉格朗日基底**（Lagrange Basis）。
+其中 $B_i = L_i(\tau) \cdot G$ 定义为**拉格朗日基底**（Lagrange Basis）。
 
 **预计算优化**：
 
-拉格朗日基底 {Bᵢ} 可通过对结构化参考串（SRS）执行逆快速傅里叶变换（Inverse Fast Fourier Transform, IFFT）在系统初始化阶段预计算获得：
+拉格朗日基底 $\{B_i\}$ 可通过对结构化参考串（SRS）执行逆快速傅里叶变换（Inverse Fast Fourier Transform, IFFT）在系统初始化阶段预计算获得：
 
 $$\{B_i\} = \text{IFFT}(\{[\tau^0 G, \tau^1 G, \ldots, \tau^{n^2-1} G]\})$$
 
 因此，任意节点的 KZG 承诺可通过单次 MSM 操作高效计算：
 
-$$C^{d,t} = \text{MSM}(\{B_i\}, \{d_i\})$$
+$$C_{d,t} = \text{MSM}(\{B_i\}, \{d_i\})$$
 
 #### 2.2.2 计算复杂度分析
 
