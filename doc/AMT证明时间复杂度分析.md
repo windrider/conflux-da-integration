@@ -108,7 +108,7 @@ h_{d,t}(\tau) \cdot G &= \frac{\Sigma_i d_i \cdot L_i(\tau)}{Z_{d,t}(\tau)} \cdo
 #### 2.1.2 计算复杂度分析
 
 ##### 树结构参数
-- 树的深度：D = log₂ n；
+- 树的深度：D = log₂(n²) = 2log₂ n；
 - 第 d 层的节点数量：Nᵈ = 2ᵈ；
 - 第 d 层每个节点包含的数据元素数：Eᵈ = n² / 2ᵈ。
 
@@ -125,7 +125,8 @@ $$h_{d,t}(\tau) \cdot G = \text{MSM}(\{Q_{i,d,t}\}, \{d_i\})$$
 总体时间复杂度：
 
 $$\begin{aligned}
-T(n) &= \log_2 n \times O(n^2) \\
+T(n) &= \log_2(n^2) \times O(n^2) \\
+&= 2\log_2 n \times O(n^2) \\
 &= O(n^2 \log n)
 \end{aligned}$$
 
