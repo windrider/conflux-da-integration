@@ -30,9 +30,21 @@ AMT 承诺机制基于多项式承诺方案，其核心思想是将数据向量�
 
 在系统初始化的可信设置（Trusted Setup）阶段，执行以下步骤：
 
-1. 选取随机秘密值 $\tau \in \mathbb{F}_p$
-2. 计算结构化参考串（Structured Reference String, SRS）：$[\tau^0 G, \tau^1 G, \tau^2 G, \ldots, \tau^{n^2-1} G]$，其中 $G$ 为椭圆曲线生成元
-3. 公开发布 SRS 后，永久性销毁秘密值 $\tau$，确保系统安全性
+**步骤 1**：选取随机秘密值
+
+$$
+\tau \in \mathbb{F}_p
+$$
+
+**步骤 2**：计算结构化参考串（Structured Reference String, SRS）
+
+$$
+[\tau^0 G, \tau^1 G, \tau^2 G, \ldots, \tau^{n^2-1} G]
+$$
+
+其中 $G$ 为椭圆曲线生成元。
+
+**步骤 3**：公开发布 SRS 后，永久性销毁秘密值 $\tau$，确保系统安全性。
 
 基于该 SRS，多项式 $f(x)$ 的 KZG 承诺可表示为：
 
