@@ -100,7 +100,92 @@ Conflux DA 是一个基于 BLS 签名和 KZG 承诺的数据可用性解决方�
    ▼
 7. 确认
    DAEntrance: 存储 _verifiedErasureCommitment[identifier] = commitment
+   触发事件: ErasureCommitmentVerified(dataRoot, epoch, quorumId)
 ```
+
+### 2.2 DA Sampling 与奖励挖矿流程（与数据提交并行）
+
+```
+┌──────────────────────────────────────────────────────────────────────────┐
+│                      DA Sampling 挖矿流程（并行）                           │
+└──────────────────────────────────────────────────────────────────────────┘
+
+1. DA Node 监听链上事件
+   DA Node ──[监听 ErasureCommitmentVerified 事件]──▶ DAEntrance.sol
+                                                         │
+   ┌──────────────────────────────────────────────────────┘
+   │  获取:
+   │  - dataRoot (数据标识)
+   │  - epoch (epoch 编号)
+   │  - quorumId (quorum 标识)
+   │  - commitment (已验证的纠删码承诺)
+   ▼
+2. 读取 DA Sampling 参数
+   DA Node ──[sampleTask()]──▶ DAEntrance.sol
+                                  │
+   ┌──────────────────────────────┘
+   │  返回:
+   │  - sampleSeed (当前 round 的随机种子)
+   │  - podasTarget (PoDA 难度目标)
+   │  - sampleRound (采样轮次)
+   ▼
+3. 本地 PoDA 挖矿
+   DA Node:
+   - 基于 sampleSeed、dataRoot、epoch、quorumId 计算哈希
+   - 遍历自己负责的行索引 (lineIndex) 和子索引 (sublineIndex)
+   - 计算 quality = keccak256(sampleSeed || dataRoot || epoch || quorumId || lineIndex || sublineIndex)
+   - 当 quality <= podasTarget 时，找到有效解
+   
+4. 生成采样证明
+   DA Node:
+   - 读取本地存储的切片数据 (row data)
+   - 生成 AMT 证明 (row commitment + Merkle 证明)
+   - 构造 SampleResponse:
+     * dataRoot, epoch, quorumId
+     * sampleSeed, quality
+     * lineIndex, sublineIndex
+     * row (切片数据)
+     * amt_proof (AMT 树证明)
+     * merkle_proof (Merkle 树证明)
+   
+5. 提交采样响应到链上
+   DA Node ──[submitSamplingResponse(SampleResponse)]──▶ DAEntrance.sol
+                                                             │
+   ┌─────────────────────────────────────────────────────────┘
+   │  验证:
+   │  1. quality <= podasTarget (难度检查)
+   │  2. sampleSeed == currentSampleSeed (种子匹配)
+   │  3. commitmentExists(dataRoot, epoch, quorumId) (数据已验证)
+   │  4. epoch + epochWindowSize >= currentEpoch (时间窗口检查)
+   │  5. verify_amt_proof (AMT 树证明验证)
+   │  6. verify_merkle_proof (Merkle 树证明验证)
+   ▼
+6. 发放奖励
+   DAEntrance:
+   - 查询 DA_SIGNERS.getQuorumRow(epoch, quorumId, lineIndex) 获取受益人地址
+   - 计算奖励: reward = activedReward / rewardRatio + donation
+   - 异步转账给受益人 (PullPayment 模式)
+   - 触发事件: DAReward(beneficiary, sampleRound, epoch, quorumId, dataRoot, quality, lineIndex, sublineIndex, reward)
+   
+7. DA Node 领取奖励
+   DA Node ──[withdrawPayments()]──▶ DAEntrance.sol (PullPayment)
+                                        │
+   ┌───────────────────────────────────┘
+   │  将累积的奖励转账到 DA Node 账户
+   ▼
+   DA Node 收到奖励
+```
+
+**关键要点:**
+
+- **触发条件**: DA Node 通过监听 `ErasureCommitmentVerified` 事件，得知有新的已验证数据可以挖矿。
+- **挖矿机制**: PoDA (Proof of Data Availability) - 通过暴力搜索找到满足 `quality <= podasTarget` 的 (lineIndex, sublineIndex) 组合。
+- **动态难度**: `podasTarget` 会根据每轮提交数量自动调整，类似 PoW 难度调整。
+- **奖励来源**: 
+  - `activedReward`: 从用户提交 `submitOriginalData` 时支付的费用中积累
+  - `totalDonations`: 外部捐赠池
+- **防作弊**: 链上会验证完整的 AMT + Merkle 证明，确保 DA Node 真实存储了数据。
+- **时间窗口**: 只有在 `[epoch, epoch + epochWindowSize)` 范围内的数据才能参与挖矿，过期数据不再奖励。
 
 ---
 
