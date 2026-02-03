@@ -8,7 +8,8 @@
 	branch = conflux-da-integration-multinode
 [submodule "da-encoder/0g-da-encoder"]
 	path = da-encoder/0g-da-encoder
-	url = git@github.com:0glabs/0g-da-encoder.git
+	url = git@github.com:windrider/0g-da-encoder.git
+	branch = conflux-da-integration-multinode
 [submodule "da-node/0g-da-node"]
 	path = da-node/0g-da-node
 	url = git@github.com:windrider/0g-da-node.git
