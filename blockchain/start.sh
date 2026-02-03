@@ -11,6 +11,7 @@ if [ ! -d "/data/blockchain_data" ]; then
 fi
 
 # Create genesis accounts file
+mkdir -p ./run
 cat > ./run/genesis_accounts.txt << 'EOF'
 # Hardhat account #0
 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266=100000000000000000000000000

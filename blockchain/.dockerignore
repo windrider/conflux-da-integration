@@ -2,6 +2,10 @@
 0g-chain/client/docs
 **/node_modules/
 .git/
+
+# Rust build artifacts (very large!)
+conflux-rust/target/
+**/target/
 .github/
 tests/
 

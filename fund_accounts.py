@@ -16,12 +16,32 @@ else:
     print("Error: Cannot connect to Conflux node")
     exit(1)
 
+# 等待节点退出 catch up 模式
+print("Waiting for node to finish syncing...")
+for i in range(120):  # 最多等待 2 分钟
+    try:
+        # 尝试获取区块号，如果成功则节点已同步
+        block = w3.eth.block_number
+        if block > 0:
+            print(f"✓ Node synced, current block: {block}")
+            break
+    except Exception as e:
+        if "catch up mode" in str(e):
+            if i % 10 == 0:
+                print(f"  Still syncing... ({i}s)")
+        else:
+            pass
+    time.sleep(1)
+else:
+    print("Warning: Node may still be syncing, proceeding anyway...")
+
 genesis_private_key = "0x46b9e861b63d3509c88b7817275a30d22d62c8cd8fa6486ddee35ef0d8e0495f"
 account = w3.eth.account.from_key(genesis_private_key)
 print(f"Using genesis account: {account.address}")
 
 genesis_balance = w3.eth.get_balance(account.address)
 print(f"Genesis balance: {w3.from_wei(genesis_balance, 'ether')} CFX")
+print()
 
 accounts_to_fund = [
     ("0x9685c4eb29309820cdc62663cc6cc82f3d42e964", "DA node 1 signer"),
@@ -44,19 +64,33 @@ amount = w3.to_wei(100, "ether")
 for to_address, name in accounts_to_fund:
     print(f"\nFunding {name}...")
     to_address = w3.to_checksum_address(to_address)
-    nonce = w3.eth.get_transaction_count(account.address)
-    tx = {
-        "nonce": nonce,
-        "to": to_address,
-        "value": amount,
-        "gas": 21000,
-        "gasPrice": w3.eth.gas_price,
-        "chainId": w3.eth.chain_id
-    }
-    signed_tx = w3.eth.account.sign_transaction(tx, genesis_private_key)
-    tx_hash = w3.eth.send_raw_transaction(signed_tx.raw_transaction)
-    print(f"Transaction: {tx_hash.hex()}")
-    receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
-    print(f"✓ Funded {name} with 100 CFX (block: {receipt['blockNumber']})")
+    
+    # 重试机制，防止 catch up mode 错误
+    for retry in range(10):
+        try:
+            nonce = w3.eth.get_transaction_count(account.address)
+            tx = {
+                "nonce": nonce,
+                "to": to_address,
+                "value": amount,
+                "gas": 21000,
+                "gasPrice": w3.eth.gas_price,
+                "chainId": w3.eth.chain_id
+            }
+            signed_tx = w3.eth.account.sign_transaction(tx, genesis_private_key)
+            tx_hash = w3.eth.send_raw_transaction(signed_tx.raw_transaction)
+            print(f"Transaction: {tx_hash.hex()}")
+            receipt = w3.eth.wait_for_transaction_receipt(tx_hash, timeout=60)
+            print(f"✓ Funded {name} with 100 CFX (block: {receipt['blockNumber']})")
+            break
+        except Exception as e:
+            if "catch up mode" in str(e):
+                print(f"  Node still syncing, retry {retry+1}/10...")
+                time.sleep(3)
+            else:
+                raise e
+    else:
+        print(f"Error: Failed to fund {name} after 10 retries")
+        exit(1)
 
 print("\n✓ All accounts funded successfully!")

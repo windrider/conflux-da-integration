@@ -3,4 +3,8 @@
 /da-contract/cache/*
 */blockchain_data/
 *.log
-/blockchain/run/blockchain_data/
+/blockchain/run/blockchain_data/blockchain/conflux
+blockchain/pos-genesis-tool
+blockchain/conflux
+blockchain/pos-genesis-tool
+blockchain/run/

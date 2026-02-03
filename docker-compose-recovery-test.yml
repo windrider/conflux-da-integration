@@ -35,7 +35,7 @@ services:
       - ./fund_accounts.py:/fund_accounts.py:ro
     command: ["/bin/bash", "-c", "pip install -q web3 && python3 /fund_accounts.py"]
 
-  0g-da-contract:
+  conflux-da-contract:
     image: 0g-da-contract
     build:
       context: ./da-contract
@@ -50,10 +50,10 @@ services:
     network_mode: "service:conflux-chain"
     command: sh -c "yarn deploy zg"
 
-  0g-da-node:
+  conflux-da-node:
     image: conflux-da-integration-0g-da-node:patched
     depends_on:
-      0g-da-contract:
+      conflux-da-contract:
         condition: service_completed_successfully
     volumes:
       - ./da-node/config.toml:/config.toml:ro
@@ -65,10 +65,10 @@ services:
       retries: 12   
     command: ["sh", "-c", "sleep 5 && server --config config.toml"]
 
-  0g-da-node-2:
+  conflux-da-node-2:
     image: conflux-da-integration-0g-da-node:patched
     depends_on:
-      0g-da-contract:
+      conflux-da-contract:
         condition: service_completed_successfully
     volumes:
       - ./da-node/config2.toml:/config.toml:ro
@@ -80,10 +80,10 @@ services:
       retries: 12   
     command: ["sh", "-c", "sleep 5 && server --config config.toml"]
 
-  0g-da-node-3:
+  conflux-da-node-3:
     image: conflux-da-integration-0g-da-node:patched
     depends_on:
-      0g-da-contract:
+      conflux-da-contract:
         condition: service_completed_successfully
     volumes:
       - ./da-node/config3.toml:/config.toml:ro
@@ -95,7 +95,7 @@ services:
       retries: 12   
     command: ["sh", "-c", "sleep 5 && server --config config.toml"]
 
-  0g-da-encoder:
+  conflux-da-encoder:
     image: 0g-da-encoder
     volumes:
       - ./da-encoder/params:/params:ro
@@ -111,18 +111,22 @@ services:
 
   # ============================================
   # Retriever 服务：从 DA Nodes 获取数据并恢复
+  # 容错测试: 使用 --skip-nodes N 跳过 N 个节点
+  #   --skip-nodes 0: 使用所有 3 个节点 (默认)
+  #   --skip-nodes 1: 只用 2 个节点 (测试 1 节点失效)
+  #   --skip-nodes 2: 只用 1 个节点 (测试 2 节点失效)
   # ============================================
-  0g-da-retriever:
+  conflux-da-retriever:
     image: 0g-da-retriever
     build:
       context: ./da-encoder
       dockerfile: Dockerfile.retriever
     depends_on:
-      0g-da-node:
+      conflux-da-node:
         condition: service_healthy
-      0g-da-node-2:
+      conflux-da-node-2:
         condition: service_healthy
-      0g-da-node-3:
+      conflux-da-node-3:
         condition: service_healthy
     network_mode: "service:conflux-chain"
     healthcheck:
@@ -130,20 +134,20 @@ services:
       interval: 3s
       timeout: 3s
       retries: 10
-    command: retriever --grpc-listen-address 0.0.0.0:34005 --da-node-addresses localhost:34001,localhost:34002,localhost:34003
+    command: retriever --grpc-listen-address 0.0.0.0:34005 --da-node-addresses localhost:34001,localhost:34002,localhost:34003 --skip-nodes ${SKIP_NODES:-0}
 
-  0g-da-disperser:
+  conflux-da-disperser:
     image: 0g-da-disperser
     depends_on: 
-      0g-da-node:
+      conflux-da-node:
         condition: service_healthy
-      0g-da-node-2:
+      conflux-da-node-2:
         condition: service_healthy
-      0g-da-node-3:
+      conflux-da-node-3:
         condition: service_healthy
-      0g-da-encoder:
+      conflux-da-encoder:
         condition: service_started
-      0g-da-retriever:
+      conflux-da-retriever:
         condition: service_healthy
     network_mode: "service:conflux-chain"
     command: /combined
@@ -176,10 +180,10 @@ services:
   # 数据恢复测试客户端
   # 使用 zgda-store 命令：存储 -> 恢复 -> 验证
   # ============================================
-  0g-da-test-client:
+  conflux-da-test-client:
     image: 0g-da-test-client
     depends_on:
-      - 0g-da-disperser
+      - conflux-da-disperser
     command: client zgda-store --url http://localhost:51001 --block-size 1024 --stop
     network_mode: "service:conflux-chain"
 
