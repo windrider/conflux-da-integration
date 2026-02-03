@@ -1,0 +1,38 @@
+# Retriever Service Dockerfile
+# 复用 da-encoder workspace 构建环境
+# 注意：需要先在宿主机编译一次以缓存依赖
+
+FROM rust:1.78 AS builder
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y protobuf-compiler libclang-dev git
+
+RUN rustup install 1.78
+RUN rustup default 1.78
+RUN rustup component add rustfmt clippy rust-src
+
+# 配置 git 使用 cli 模式（解决 SSL 问题）
+RUN git config --global net.git-fetch-with-cli true
+
+COPY ./0g-da-encoder .
+
+# 使用 buildkit 缓存
+RUN --mount=type=cache,target=/usr/local/cargo/registry \
+    --mount=type=cache,target=/usr/local/cargo/git \
+    cargo fetch || true
+
+RUN --mount=type=cache,target=/usr/local/cargo/registry \
+    --mount=type=cache,target=/usr/local/cargo/git \
+    --mount=type=cache,target=/app/target \
+    cargo build --release -p zg-da-retriever --features parallel && \
+    cp /app/target/release/zg-da-retriever ./retriever-output
+
+
+FROM ubuntu:latest
+
+# 安装必要工具（netcat 用于 healthcheck）
+RUN apt-get update && apt-get install -y netcat-openbsd && rm -rf /var/lib/apt/lists/*
+
+# 复制构建好的二进制文件到新的容器中
+COPY --from=builder /app/retriever-output /usr/local/bin/retriever

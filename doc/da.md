@@ -178,6 +178,18 @@ Conflux DA 是一个基于 BLS 签名和 KZG 承诺的数据可用性解决方�
 
 **关键要点:**
 
+- **sampleSeed 的来源**: 合约在每一轮采样开始时，根据固定高度的区块哈希生成随机种子：
+  - 设 `samplePeriod` 为采样周期（区块数），`nextSampleHeight` 为下一轮采样高度；当 `block.number >= nextSampleHeight` 时，进入新一轮采样，执行 
+    - `currentSampleSeed = blockhash(nextSampleHeight - 1)`
+    - `nextSampleHeight += samplePeriod`
+  - DA Node 通过 `sampleTask()` 获取的 `sampleSeed` 实际上就是当前轮的 `currentSampleSeed`，并在提交 `SampleResponse` 时要求 `rep.sampleSeed == currentSampleSeed`。
+- **采样点唯一性**: 合约使用 `identifier = keccak256(sampleSeed, epoch, quorumId, lineIndex, sublineIndex)` 唯一标识一个采样点；每个采样点只能成功挖矿一次，重复提交会被 `_submittedDASampling[identifier]` 拦截。
+- **quality 计算与难度**:
+  - 行级质量: `lineQuality = keccak256(sampleSeed, epoch, quorumId, dataRoot, lineIndex)`
+  - 子行级质量: `dataQuality = keccak256(lineQuality, sublineIndex, data)`
+  - 最终质量: `quality = lineQuality + dataQuality`，合约在 `verify()` 中重算并要求 `lineQuality + dataQuality == rep.quality`，且 `rep.quality <= podasTarget` 才视为“挖中”。
+- **数据有效性与时间窗口**: 只有已经通过 `submitVerifiedCommitRoots` 确认的 `(dataRoot, epoch, quorumId)` 才能被采样；同时要求 `rep.epoch < currentEpoch` 且 `currentEpoch <= rep.epoch + epochWindowSize`，限制可挖历史范围。
+- **奖励归属与记账方式**: 合约通过 `DA_SIGNERS.getQuorumRow(epoch, quorumId, lineIndex)` 将奖励归属到该行对应的 signer 地址，奖励金额来自 `activedReward / rewardRatio + donation`，采用 PullPayment 模式异步记账，最终由 DA Node 调用 `withdrawPayments()` 提现。
 - **触发条件**: DA Node 通过监听 `ErasureCommitmentVerified` 事件，得知有新的已验证数据可以挖矿。
 - **挖矿机制**: PoDA (Proof of Data Availability) - 通过暴力搜索找到满足 `quality <= podasTarget` 的 (lineIndex, sublineIndex) 组合。
 - **动态难度**: `podasTarget` 会根据每轮提交数量自动调整，类似 PoW 难度调整。
@@ -187,6 +199,23 @@ Conflux DA 是一个基于 BLS 签名和 KZG 承诺的数据可用性解决方�
 - **防作弊**: 链上会验证完整的 AMT + Merkle 证明，确保 DA Node 真实存储了数据。
 - **时间窗口**: 只有在 `[epoch, epoch + epochWindowSize)` 范围内的数据才能参与挖矿，过期数据不再奖励。
 
+#### 2.2.1 DA Node 挖矿视角（链下流程）
+
+1. **监听与准备**：
+   - 监听 `ErasureCommitmentVerified` 事件，将对应 `(epoch, quorumId, dataRoot)` 在本地标记为 `VERIFIED`，并停止对该 blob 的后续签名服务。
+   - 周期性调用 `sampleTask()/sampleRange()`，获取当前轮的 `sampleSeed`、`podasTarget` 以及可挖的 `epoch` 区间。
+   - 从 `da.rs` 同步本节点在各个 `(epoch, quorumId)` 下的 `AssignedSlices`（本节点负责的行索引集合），并确保对应行数据已缓存在本地 `slice_db` 中。
+2. **第一阶段（行级筛选）**：
+   - 在可挖 `epoch` 区间内，对每个候选行计算 `lineQuality = keccak256(sampleSeed, epoch, quorumId, dataRoot, lineIndex)`。
+   - 仅对本节点负责的行（`AssignedSlices`）且本地有数据的行构建 `LineCandidate`，作为第二阶段的输入。
+3. **第二阶段（子行挖矿）**：
+   - 从 `slice_db` 读取行数据，按 `NUM_SUBLINES` 切分为多个子行。
+   - 对每个 `(lineIndex, sublineIndex)` 计算 `dataQuality = keccak256(lineQuality, sublineIndex, data)` 和 `quality = lineQuality + dataQuality`，筛选出满足 `quality <= podasTarget` 的采样点。
+   - 为每个命中点构造 `SampleResponse`，包含：`epoch, quorumId, dataRoot, lineIndex, sublineIndex, quality, sample_seed`，以及子行 Merkle 证明、行 Merkle 证明和 `blob_roots`，确保链上可重放验证。
+4. **上链提交与领奖**：
+   - Submitter 在提交前再次通过 `commitmentExists(dataRoot, epoch, quorumId)` 确认该 blob 已在链上完成 erasure commitment 验证。
+   - 调用 `submitSamplingResponse(SampleResponse)` 将本次挖矿结果提交给 `DAEntrance`；成功后合约发出 `DAReward` 事件，并将奖励记入 PullPayment 余额。
+   - DA Node 可按策略（例如累计到一定金额或定期）调用 `withdrawPayments()`，将链上累积奖励提取到本地账户。
 ---
 
 ## 3. 数据结构

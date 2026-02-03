@@ -1,0 +1,187 @@
+# 数据恢复测试配置
+# 使用方式: docker compose -f docker-compose-recovery-test.yml up
+# 与原配置的区别: test-client 使用 zgda-store 命令，会测试存储和恢复功能
+
+services:
+  conflux-chain:
+    image: conflux-chain
+    build:
+      context: ./blockchain
+      dockerfile: Dockerfile
+    ports:
+      - "8545:8545"  # eSpace RPC
+      - "8546:8546"  # eSpace WebSocket
+      - "12537:12537"  # Conflux RPC
+      - "12535:12535"  # Conflux WebSocket
+      - "32323:32323"  # P2P
+    volumes:
+      - ./blockchain/run/conflux.toml:/config/conflux.toml:ro
+      - conflux-data:/data
+    healthcheck:
+      test: ["CMD", "sh", "-c", "curl -f -X POST -H 'Content-Type: application/json' -d '{\"jsonrpc\":\"2.0\",\"method\":\"eth_blockNumber\",\"params\":[],\"id\":1}' http://localhost:8545 | grep result"]
+      interval: 6s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    restart: unless-stopped
+
+  fund-accounts:
+    image: python:3.11-slim
+    depends_on:
+      conflux-chain:
+        condition: service_healthy
+    network_mode: "service:conflux-chain"
+    volumes:
+      - ./fund_accounts.py:/fund_accounts.py:ro
+    command: ["/bin/bash", "-c", "pip install -q web3 && python3 /fund_accounts.py"]
+
+  0g-da-contract:
+    image: 0g-da-contract
+    build:
+      context: ./da-contract
+      dockerfile: Dockerfile
+    depends_on:
+      fund-accounts:
+        condition: service_completed_successfully
+    environment:
+      - DEPLOYER_KEY=02c3357d2ae0a59e18f62ab69093cc22eac1a25c9f78af7f78650939ecda5f62
+    volumes:
+      - ./da-contract/cache:/root/.cache
+    network_mode: "service:conflux-chain"
+    command: sh -c "yarn deploy zg"
+
+  0g-da-node:
+    image: conflux-da-integration-0g-da-node:patched
+    depends_on:
+      0g-da-contract:
+        condition: service_completed_successfully
+    volumes:
+      - ./da-node/config.toml:/config.toml:ro
+    network_mode: "service:conflux-chain"
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "34001"]
+      interval: 6s 
+      timeout: 5s  
+      retries: 12   
+    command: ["sh", "-c", "sleep 5 && server --config config.toml"]
+
+  0g-da-node-2:
+    image: conflux-da-integration-0g-da-node:patched
+    depends_on:
+      0g-da-contract:
+        condition: service_completed_successfully
+    volumes:
+      - ./da-node/config2.toml:/config.toml:ro
+    network_mode: "service:conflux-chain"
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "34002"]
+      interval: 6s 
+      timeout: 5s  
+      retries: 12   
+    command: ["sh", "-c", "sleep 5 && server --config config.toml"]
+
+  0g-da-node-3:
+    image: conflux-da-integration-0g-da-node:patched
+    depends_on:
+      0g-da-contract:
+        condition: service_completed_successfully
+    volumes:
+      - ./da-node/config3.toml:/config.toml:ro
+    network_mode: "service:conflux-chain"
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "34003"]
+      interval: 6s 
+      timeout: 5s  
+      retries: 12   
+    command: ["sh", "-c", "sleep 5 && server --config config.toml"]
+
+  0g-da-encoder:
+    image: 0g-da-encoder
+    volumes:
+      - ./da-encoder/params:/params:ro
+    command: server --config config.toml
+    network_mode: "service:conflux-chain"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+  # ============================================
+  # Retriever 服务：从 DA Nodes 获取数据并恢复
+  # ============================================
+  0g-da-retriever:
+    image: 0g-da-retriever
+    build:
+      context: ./da-encoder
+      dockerfile: Dockerfile.retriever
+    depends_on:
+      0g-da-node:
+        condition: service_healthy
+      0g-da-node-2:
+        condition: service_healthy
+      0g-da-node-3:
+        condition: service_healthy
+    network_mode: "service:conflux-chain"
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "34005"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+    command: retriever --grpc-listen-address 0.0.0.0:34005 --da-node-addresses localhost:34001,localhost:34002,localhost:34003
+
+  0g-da-disperser:
+    image: 0g-da-disperser
+    depends_on: 
+      0g-da-node:
+        condition: service_healthy
+      0g-da-node-2:
+        condition: service_healthy
+      0g-da-node-3:
+        condition: service_healthy
+      0g-da-encoder:
+        condition: service_started
+      0g-da-retriever:
+        condition: service_healthy
+    network_mode: "service:conflux-chain"
+    command: /combined
+        --chain.rpc http://localhost:8545/
+        --chain.private-key 58095a53ea065b7dc3065365b2a8f6797f26464381bb6a34f8337f010a63cb63
+        --chain.receipt-wait-rounds 180
+        --chain.receipt-wait-interval 1s
+        --chain.gas-limit 2000000
+        --combined-server.use-memory-db
+        --batcher.da-entrance-contract 0x6Fefa456504C11B38444Cd66F9D3291270D58CB2
+        --batcher.da-signers-contract 0x0888000000000000000000000000000000000003
+        --combined-server.storage.kv-db-path /data
+        --combined-server.storage.time-to-expire 300
+        --disperser-server.grpc-port 51001
+        --disperser-server.retriever-address localhost:34005
+        --batcher.pull-interval 30s
+        --batcher.signed-pull-interval 60s
+        --batcher.finalizer-interval 20s
+        --batcher.confirmer-num 3
+        --batcher.max-num-retries-for-sign 10
+        --batcher.finalized-block-count 50
+        --batcher.encoding-request-queue-size 1
+        --encoder-socket localhost:34000
+        --batcher.batch-size-limit 500
+        --encoding-timeout 300s
+        --chain-read-timeout 12s
+        --chain-write-timeout 13s
+
+  # ============================================
+  # 数据恢复测试客户端
+  # 使用 zgda-store 命令：存储 -> 恢复 -> 验证
+  # ============================================
+  0g-da-test-client:
+    image: 0g-da-test-client
+    depends_on:
+      - 0g-da-disperser
+    command: client zgda-store --url http://localhost:51001 --block-size 1024 --stop
+    network_mode: "service:conflux-chain"
+
+volumes:
+  conflux-data:
