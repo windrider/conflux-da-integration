@@ -1,6 +1,5 @@
-# Retriever Service Dockerfile
-# 复用 da-encoder workspace 构建环境
-# 注意：需要先在宿主机编译一次以缓存依赖
+# Retriever Service Dockerfile (优化版)
+# 利用 Docker 多阶段缓存 + Cargo 增量编译，加速重复构建
 
 FROM rust:1.78 AS builder
 
@@ -12,16 +11,47 @@ RUN rustup install 1.78
 RUN rustup default 1.78
 RUN rustup component add rustfmt clippy rust-src
 
-# 配置 git 使用 cli 模式（解决 SSL 问题）
+# 配置 git（解决 GitHub SSL 问题）
 RUN git config --global net.git-fetch-with-cli true
+RUN git config --global http.sslVerify false
+RUN git config --global http.postBuffer 524288000
 
-COPY ./0g-da-encoder .
+# ===== 优化关键：分层复制，最大化缓存利用 =====
 
-# 使用 buildkit 缓存
+# 第 1 层：只复制依赖清单（Cargo.toml/Cargo.lock）
+COPY ./0g-da-encoder/Cargo.toml ./0g-da-encoder/Cargo.lock ./
+
+# 第 2 层：复制所有子项目的 Cargo.toml（触发依赖下载）
+COPY ./0g-da-encoder/retriever/Cargo.toml ./retriever/
+COPY ./0g-da-encoder/server/Cargo.toml ./server/
+COPY ./0g-da-encoder/grpc/Cargo.toml ./grpc/
+COPY ./0g-da-encoder/crates/amt/Cargo.toml ./crates/amt/
+COPY ./0g-da-encoder/crates/encoder/Cargo.toml ./crates/encoder/
+COPY ./0g-da-encoder/crates/ppot2ark/Cargo.toml ./crates/ppot2ark/
+COPY ./0g-da-encoder/crates/recovery/Cargo.toml ./crates/recovery/
+
+# 第 3 层：创建虚拟源文件，触发依赖下载和编译（不包含真实代码）
+RUN mkdir -p retriever/src server/src grpc/src crates/amt/src crates/encoder/src crates/ppot2ark/src crates/recovery/src && \
+    echo "fn main() {}" > retriever/src/main.rs && \
+    echo "fn main() {}" > server/src/main.rs && \
+    echo "pub fn dummy() {}" > grpc/src/lib.rs && \
+    echo "pub fn dummy() {}" > crates/amt/src/lib.rs && \
+    echo "pub fn dummy() {}" > crates/encoder/src/lib.rs && \
+    echo "pub fn dummy() {}" > crates/ppot2ark/src/lib.rs && \
+    echo "pub fn dummy() {}" > crates/recovery/src/lib.rs
+
+# 第 4 层：下载并编译所有依赖（这一层会被缓存，只要 Cargo.toml 不变）
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/usr/local/cargo/git \
-    cargo fetch || true
+    cargo build --release -p zg-da-retriever --features parallel || true
 
+# 第 5 层：删除虚拟编译产物，准备真实编译
+RUN rm -rf ./target/release/.fingerprint/zg-da-* ./target/release/deps/zg_da_*
+
+# 第 6 层：复制真实源码（只有源码改变时，这层才会失效）
+COPY ./0g-da-encoder .
+
+# 第 7 层：真实编译（只重新编译改变的部分，利用 Cargo 增量编译）
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/usr/local/cargo/git \
     --mount=type=cache,target=/app/target \

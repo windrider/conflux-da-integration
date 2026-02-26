@@ -1,11 +1,11 @@
 # 使用官方 Rust 镜像作为构建环境
-FROM rust:1.75 AS builder
+FROM rust:1.80 AS builder
 
 WORKDIR /app
 
 RUN apt-get update && apt-get install -y protobuf-compiler libclang-dev
 
-RUN rustup install 1.75
+RUN rustup install 1.80
 
 COPY ./0g-da-example-rust .
 
