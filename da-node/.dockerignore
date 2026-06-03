@@ -5,3 +5,13 @@ target
 run
 params
 db
+**/target
+**/db
+**/db2
+**/db3
+**/.git
+**/.github
+**/.idea
+**/.vscode
+**/*.log
+**/tmp
