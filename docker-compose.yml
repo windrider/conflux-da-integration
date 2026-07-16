@@ -41,12 +41,42 @@ services:
         condition: service_completed_successfully
     environment:
       - DEPLOYER_KEY=02c3357d2ae0a59e18f62ab69093cc22eac1a25c9f78af7f78650939ecda5f62
+      - DEPLOYMENTS_JSON=/app/deployments/zg/da-addresses.json
+      - DA_NODE_DIR=/da-node
     volumes:
       - ./da-contract/cache:/root/.cache
+      - ./da-contract/0g-da-contract/deployments:/app/deployments
+      - ./da-node:/da-node:rw
+      - ./scripts:/scripts:ro
     network_mode: "service:conflux-chain"
-    command: sh -c "yarn deploy zg"
+    command: sh -c "yarn deploy zg && python3 /scripts/apply_da_addresses.py"
 
-
+  # Permissionless finalizeEpoch() — official maintainer keeper (anyone may run a copy).
+  da-finalize-keeper:
+    image: python:3.11-slim
+    depends_on:
+      conflux-da-contract:
+        condition: service_completed_successfully
+    network_mode: "service:conflux-chain"
+    volumes:
+      - ./scripts/da_finalize_keeper.py:/da_finalize_keeper.py:ro
+      - ./da-node/0g-da-node/abis/IDASigners.json:/abis/IDASigners.json:ro
+      - ./da-contract/0g-da-contract/deployments:/deployments:ro
+    environment:
+      - PYTHONUNBUFFERED=1
+      - RPC_URL=http://127.0.0.1:8545
+      - DEPLOYMENTS_JSON=/deployments/zg/da-addresses.json
+      - KEEPER_PRIVATE_KEY=02c3357d2ae0a59e18f62ab69093cc22eac1a25c9f78af7f78650939ecda5f62
+      - EPOCH_BLOCKS=100
+      - POLL_INTERVAL_SEC=10
+      - MIN_BLOCK_GAS=30000000
+    command:
+      - /bin/bash
+      - -c
+      - |
+        pip install -q -i https://pypi.tuna.tsinghua.edu.cn/simple web3 && \
+        exec python3 /da_finalize_keeper.py
+    restart: unless-stopped
 
   conflux-da-node:
     image: conflux-da-integration-0g-da-node:patched
@@ -119,30 +149,39 @@ services:
       conflux-da-encoder:
         condition: service_started
     network_mode: "service:conflux-chain"
-    command: /combined
-        --chain.rpc http://localhost:8545/
-        --chain.private-key 58095a53ea065b7dc3065365b2a8f6797f26464381bb6a34f8337f010a63cb63
-        --chain.receipt-wait-rounds 180
-        --chain.receipt-wait-interval 1s
-        --chain.gas-limit 2000000
-        --combined-server.use-memory-db
-        --batcher.da-entrance-contract 0x6Fefa456504C11B38444Cd66F9D3291270D58CB2
-        --batcher.da-signers-contract 0x0888000000000000000000000000000000000003
-        --combined-server.storage.kv-db-path /data
-        --combined-server.storage.time-to-expire 300
-        --disperser-server.grpc-port 51001
-        --batcher.pull-interval 30s
-        --batcher.signed-pull-interval 60s
-        --batcher.finalizer-interval 20s
-        --batcher.confirmer-num 3
-        --batcher.max-num-retries-for-sign 10
-        --batcher.finalized-block-count 50
-        --batcher.encoding-request-queue-size 1
-        --encoder-socket localhost:34000
-        --batcher.batch-size-limit 500
-        --encoding-timeout 300s
-        --chain-read-timeout 12s
-        --chain-write-timeout 13s
+    env_file:
+      - ./da-contract/0g-da-contract/deployments/zg/da-addresses.env
+    command:
+      - sh
+      - -c
+      - |
+        set -e
+        test -n "$$DASIGNERS_ADDRESS" && test -n "$$DA_ENTRANCE_ADDRESS"
+        exec /combined \
+          --chain.rpc http://localhost:8545/ \
+          --chain.private-key 58095a53ea065b7dc3065365b2a8f6797f26464381bb6a34f8337f010a63cb63 \
+          --chain.receipt-wait-rounds 180 \
+          --chain.receipt-wait-interval 1s \
+          --chain.gas-limit 2000000 \
+          --combined-server.use-memory-db \
+          --batcher.da-entrance-contract "$$DA_ENTRANCE_ADDRESS" \
+          --batcher.da-signers-contract "$$DASIGNERS_ADDRESS" \
+          --combined-server.storage.kv-db-path /data \
+          --combined-server.storage.time-to-expire 300 \
+          --disperser-server.grpc-port 51001 \
+          --batcher.pull-interval 30s \
+          --batcher.signed-pull-interval 60s \
+          --batcher.finalizer-interval 20s \
+          --batcher.confirmer-num 3 \
+          --batcher.max-num-retries-for-sign 10 \
+          --signing-timeout 180s \
+          --batcher.finalized-block-count 50 \
+          --batcher.encoding-request-queue-size 1 \
+          --encoder-socket localhost:34000 \
+          --batcher.batch-size-limit 500 \
+          --encoding-timeout 900s \
+          --chain-read-timeout 12s \
+          --chain-write-timeout 13s
 
   # ============================================
   # Retriever 服务（数据恢复测试专用）

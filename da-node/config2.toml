@@ -17,7 +17,8 @@ eth_rpc_endpoint = "http://localhost:8545/"
 socket_address = "localhost:34002"
 
 # data availability contract to interact with
-da_entrance_address = "0x6Fefa456504C11B38444Cd66F9D3291270D58CB2"
+da_entrance_address = "0x69AA042f255d3981A542C42DCAf68b8587FD6Db0"
+da_signers_address = "0x1952e2B4844eb09c475E9A6487d002d71b46E8f9"
 # deployed block number of da entrance contract
 start_block_number = 0
 

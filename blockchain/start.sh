@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-echo "Starting Conflux node with DA support..."
+echo "Starting Conflux dev node (Solidity DA — no built-in da.rs)..."
 
 # Initialize data directory if not exists
 if [ ! -d "/data/blockchain_data" ]; then
@@ -38,12 +38,12 @@ node_type = "archive"
 # Genesis accounts
 genesis_accounts = "./run/genesis_accounts.txt"
 
-# Increase gas limit for DA contract deployment (60,000,000)
-target_block_gas_limit = 60000000
+# finalizeEpoch (3072 slots, evm_gas_ratio=2) needs ~200M+ gas; eSpace cap ≈ target×50%.
+target_block_gas_limit = 520000000
 
 
-# DA功能启用（从区块0开始）
-cipda = 0
+# Built-in CIP-DA (da.rs @ 0x0888...0003) disabled — Signers use external Solidity deploy.
+cipda = 999999999
 
 # RPC configuration
 jsonrpc_http_port = 12537

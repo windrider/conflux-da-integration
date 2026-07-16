@@ -5,7 +5,7 @@
 [submodule "da-contract/0g-da-contract"]
 	path = da-contract/0g-da-contract
 	url = git@github.com:windrider/0g-da-contract.git
-	branch = conflux-da-integration-multinode
+	branch = da-signers-solidity
 [submodule "da-encoder/0g-da-encoder"]
 	path = da-encoder/0g-da-encoder
 	url = git@github.com:windrider/0g-da-encoder.git
@@ -13,7 +13,7 @@
 [submodule "da-node/0g-da-node"]
 	path = da-node/0g-da-node
 	url = git@github.com:windrider/0g-da-node.git
-	branch = conflux-da-integration-multinode
+	branch = da-signers-solidity
 [submodule "test-client/0g-da-example-rust"]
 	path = test-client/0g-da-example-rust
 	url = git@github.com:0glabs/0g-da-example-rust.git

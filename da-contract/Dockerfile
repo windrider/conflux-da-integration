@@ -15,7 +15,7 @@ COPY ./0g-da-contract .
 
 RUN du -sh *
 
-RUN sed -i '/await (await entrance_.initialize()).wait();/a\    await entrance_.setSamplePeriod(10);' src/deploy/deploy_da_entrance.ts
+# samplePeriod=10 is set in DAEntrance.initialize()
 
 # 构建应用
 RUN --mount=type=cache,target=/builder/node_modules yarn build
@@ -29,7 +29,7 @@ FROM node:18-alpine
 # 设置工作目录
 WORKDIR /app
 
-RUN apk add bash
+RUN apk add bash python3
 
 # 从构建器阶段复制构建的输出文件
 COPY --from=builder /out/node_modules ./node_modules

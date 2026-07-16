@@ -5,4 +5,4 @@ FROM 0g-da-node:latest
 RUN rm /usr/local/bin/server
 
 # 从构建阶段复制新的二进制文件
-COPY ./0g-da-node/target/release/server /usr/local/bin/server
+COPY ./server.patched /usr/local/bin/server
