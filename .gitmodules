@@ -1,22 +1,26 @@
 [submodule "da-disperser/0g-da-client"]
 	path = da-disperser/0g-da-client
-	url = git@github.com:windrider/0g-da-client.git
+	url = https://github.com/windrider/0g-da-client.git
 	branch = conflux-da-integration-multinode
 [submodule "da-contract/0g-da-contract"]
 	path = da-contract/0g-da-contract
-	url = git@github.com:windrider/0g-da-contract.git
+	url = https://github.com/windrider/0g-da-contract.git
 	branch = da-signers-solidity
 [submodule "da-encoder/0g-da-encoder"]
 	path = da-encoder/0g-da-encoder
-	url = git@github.com:windrider/0g-da-encoder.git
+	url = https://github.com/windrider/0g-da-encoder.git
 	branch = conflux-da-integration-multinode
 [submodule "da-node/0g-da-node"]
 	path = da-node/0g-da-node
-	url = git@github.com:windrider/0g-da-node.git
+	url = https://github.com/windrider/0g-da-node.git
 	branch = da-signers-solidity
 [submodule "test-client/0g-da-example-rust"]
 	path = test-client/0g-da-example-rust
-	url = git@github.com:0glabs/0g-da-example-rust.git
+	url = https://github.com/windrider/0g-da-example-rust.git
 [submodule "blockchain/0g-chain"]
 	path = blockchain/0g-chain
-	url = git@github.com:0glabs/0g-chain.git
+	url = https://github.com/0glabs/0g-chain.git
+[submodule "blockchain/conflux-rust"]
+	path = blockchain/conflux-rust
+	url = https://github.com/Conflux-Chain/conflux-rust.git
+	branch = master
