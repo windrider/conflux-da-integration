@@ -43,12 +43,16 @@ services:
       - DEPLOYER_KEY=02c3357d2ae0a59e18f62ab69093cc22eac1a25c9f78af7f78650939ecda5f62
       - DEPLOYMENTS_JSON=/app/deployments/zg/da-addresses.json
       - DA_NODE_DIR=/da-node
+      - HTTP_PROXY=http://127.0.0.1:7890
+      - HTTPS_PROXY=http://127.0.0.1:7890
+      - http_proxy=http://127.0.0.1:7890
+      - https_proxy=http://127.0.0.1:7890
     volumes:
       - ./da-contract/cache:/root/.cache
       - ./da-contract/0g-da-contract/deployments:/app/deployments
       - ./da-node:/da-node:rw
       - ./scripts:/scripts:ro
-    network_mode: "service:conflux-chain"
+    network_mode: "host"
     command: sh -c "yarn deploy zg && python3 /scripts/apply_da_addresses.py"
 
   # Permissionless finalizeEpoch() — official maintainer keeper (anyone may run a copy).
@@ -129,13 +133,6 @@ services:
       - ./da-encoder/params:/params:ro
     command: server --config config.toml
     network_mode: "service:conflux-chain"
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
 
   conflux-da-disperser:
     image: 0g-da-disperser
@@ -169,6 +166,7 @@ services:
           --combined-server.storage.kv-db-path /data \
           --combined-server.storage.time-to-expire 300 \
           --disperser-server.grpc-port 51001 \
+          --disperser-server.retriever-address 127.0.0.1:34005 \
           --batcher.pull-interval 30s \
           --batcher.signed-pull-interval 60s \
           --batcher.finalizer-interval 20s \
